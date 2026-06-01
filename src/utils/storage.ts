@@ -6,182 +6,15 @@
 import { Tournament, Team, Player, Match, MatchEvent, OfflineChange } from '../types';
 
 // Pre-populated realistic initial datasets matching mockups
-const INITIAL_TOURNAMENTS: Tournament[] = [
-  {
-    id: 't1',
-    name: "Champions League 2024",
-    sport: "Fútbol 11",
-    format: "league",
-    numTeams: 16,
-    playersPerTeam: 18,
-    startDate: "2026-10-20",
-    endDate: "2026-11-30",
-    status: 'active',
-    location: "Estadio Olímpico",
-    preferredDays: ["Sáb", "Dom"],
-    startTime: "09:00",
-    endTime: "22:00"
-  },
-  {
-    id: 't2',
-    name: "Liga Senior",
-    sport: "Fútbol 11",
-    format: "groups",
-    numTeams: 12,
-    playersPerTeam: 18,
-    startDate: "2026-06-01",
-    endDate: "2026-08-15",
-    status: 'active',
-    location: "Complejo Municipal Canchas",
-    preferredDays: ["Sáb"],
-    startTime: "14:00",
-    endTime: "19:00"
-  }
-];
+const INITIAL_TOURNAMENTS: Tournament[] = [];
 
-const INITIAL_TEAMS: Team[] = [
-  { id: 'team1', name: "Falcons FC", division: "Primera División A", category: "PRO LEAGUE", color: "#004d40", status: "active", playerCount: 24 },
-  { id: 'team2', name: "Titan United", division: "Segunda División", category: "DIVISION B", color: "#fbc02d", status: "active", playerCount: 18 },
-  { id: 'team3', name: "Zenith SC", division: "Primera División A", category: "PRO LEAGUE", color: "#1a237e", status: "active", playerCount: 22 },
-  { id: 'team4', name: "Red Wolves FC", division: "Primera División B", category: "SUSPENDED", color: "#b71c1c", status: "suspended", playerCount: 20 },
-  { id: 'team5', name: "Titans FC", division: "Primera División A", category: "PREM", color: "#1e3a8a", status: "active", playerCount: 18 },
-  { id: 'team6', name: "Aurora Rovers", division: "Segunda División", category: "SEC", color: "#047857", status: "active", playerCount: 22 },
-  { id: 'team7', name: "Crimson Kings", division: "Primera División B", category: "PREM", color: "#991b1b", status: "active", playerCount: 19 },
-  { id: 'team8', name: "Steel Hawks", division: "Juveniles - Sub 21", category: "JUV", color: "#334155", status: "active", playerCount: 25 },
-  { id: 'team9', name: "Nomad United", division: "Primera División A", category: "PREM", color: "#ea580c", status: "active", playerCount: 20 },
-  { id: 'team10', name: "Atlas SC", division: "Primera División A", category: "PREM", color: "#1c1b1b", status: "active", playerCount: 18 },
-  { id: 'team11', name: "Dragons FC", division: "Primera División A", category: "PRO LEAGUE", color: "#313030", status: "active", playerCount: 18 },
-  { id: 'team12', name: "Eagles SC", division: "Primera División A", category: "PRO LEAGUE", color: "#00838f", status: "active", playerCount: 18 }
-];
+const INITIAL_TEAMS: Team[] = [];
 
-const INITIAL_PLAYERS: Player[] = [
-  // Falcons
-  { id: 'p1', teamId: 'team1', name: "Carlos Méndez", number: 10, position: "Mediocampista del." },
-  { id: 'p2', teamId: 'team1', name: "Santi G.", number: 9, position: "Delantero" },
-  { id: 'p3', teamId: 'team1', name: "Luis Fernandez", number: 1, position: "Portero" },
-  // Dragons
-  { id: 'p4', teamId: 'team11', name: "Carlos Méndez", number: 10, position: "Delantero Centro" },
-  { id: 'p5', teamId: 'team11', name: "Santi G.", number: 9, position: "Extremo Izquierdo" },
-  { id: 'p6', teamId: 'team11', name: "Felipe Gomez", number: 7, position: "Mediocentro" },
-  // Eagles
-  { id: 'p7', teamId: 'team12', name: "Jordi Alba", number: 4, position: "Defensa" },
-  { id: 'p8', teamId: 'team12', name: "Ramiro Funes", number: 8, position: "Mediocampista" },
-  { id: 'p9', teamId: 'team12', name: "Enzo Fernandez", number: 5, position: "Defensa Central" },
-];
+const INITIAL_PLAYERS: Player[] = [];
 
-const INITIAL_MATCHES: Match[] = [
-  {
-    id: 'm1',
-    tournamentId: 't1',
-    tournamentName: "Champions League 2024",
-    matchday: "Jornada 3",
-    teamAId: 'team1',
-    teamBId: 'team3',
-    teamAName: "Real Madrid",
-    teamBName: "Barcelona",
-    scoreA: 2,
-    scoreB: 1,
-    status: 'live',
-    location: "Estadio Santiago Bernabéu",
-    time: "16:45",
-    date: "2026-10-24",
-    refereeName: "Mark Thompson",
-    liveMinute: 64
-  },
-  {
-    id: 'm2',
-    tournamentId: 't1',
-    tournamentName: "Champions League 2024",
-    matchday: "Jornada 3",
-    teamAId: 'team8',
-    teamBId: 'team7',
-    teamAName: "Man. City",
-    teamBName: "Bayern",
-    scoreA: 0,
-    scoreB: 0,
-    status: 'scheduled',
-    location: "Etihad Stadium",
-    time: "21:00",
-    date: "2026-10-24",
-    refereeName: "Lucas Martinez"
-  },
-  {
-    id: 'm3',
-    tournamentId: 't1',
-    tournamentName: "Champions League 2024",
-    matchday: "Jornada 3",
-    teamAId: 'team1',
-    teamBId: 'team2',
-    teamAName: "Liverpool",
-    teamBName: "Milan",
-    scoreA: 3,
-    scoreB: 0,
-    status: 'finished',
-    location: "Anfield Road",
-    time: "12:00",
-    date: "2026-10-23",
-    refereeName: "Sarah Jenkins"
-  },
-  {
-    id: 'm4',
-    tournamentId: 't1',
-    tournamentName: "Champions League 2024",
-    matchday: "Jornada 3",
-    teamAId: 'team5',
-    teamBId: 'team10',
-    teamAName: "Titanes FC",
-    teamBName: "Atlas SC",
-    scoreA: 2,
-    scoreB: 1,
-    status: 'live',
-    location: "Cancha 1",
-    time: "16:00",
-    date: "2026-10-24",
-    refereeName: "Andrés Ruiz",
-    liveMinute: 72
-  },
-  {
-    id: 'ref-match-1',
-    tournamentId: 't1',
-    tournamentName: "Champions League 2024",
-    matchday: "Jornada 3",
-    teamAId: 'team11',
-    teamBId: 'team12',
-    teamAName: "Dragons FC",
-    teamBName: "Eagles SC",
-    scoreA: 2,
-    scoreB: 1,
-    status: 'live',
-    location: "Cancha 2",
-    time: "15:00",
-    date: "2026-10-24",
-    refereeName: "Carlos González (Árbitro)",
-    liveMinute: 68
-  },
-  {
-    id: 'm5',
-    tournamentId: 't2',
-    tournamentName: "Liga Senior",
-    matchday: "Fase de Grupos",
-    teamAId: 'team2',
-    teamBId: 'team1',
-    teamAName: "Galgos FC",
-    teamBName: "Halcones FC",
-    scoreA: 0,
-    scoreB: 0,
-    status: 'scheduled',
-    location: "Cancha 1",
-    time: "14:30",
-    date: "2026-10-24",
-    refereeName: "Tomas Ortiz"
-  }
-];
+const INITIAL_MATCHES: Match[] = [];
 
-const INITIAL_EVENTS: MatchEvent[] = [
-  { id: 'e1', matchId: 'ref-match-1', teamName: "Dragons FC", type: "goal", minute: 64, playerName: "Carlos Méndez", playerNumber: 10 },
-  { id: 'e2', matchId: 'ref-match-1', teamName: "Eagles SC", type: "red_card", minute: 42, playerName: "Jordi Alba", playerNumber: 4 },
-  { id: 'e3', matchId: 'ref-match-1', teamName: "Dragons FC", type: "goal", minute: 28, playerName: "Santi G.", playerNumber: 9 }
-];
+const INITIAL_EVENTS: MatchEvent[] = [];
 
 export function getOfflineSimState(): boolean {
   return localStorage.getItem('torneoapp_offline_sim') === 'true';
@@ -194,6 +27,7 @@ export function setOfflineSimState(state: boolean): void {
 
 export function initializeDatabase() {
   if (!localStorage.getItem('torneoapp_initialized')) {
+    // First time initialization with empty arrays
     localStorage.setItem('torneoapp_tournaments', JSON.stringify(INITIAL_TOURNAMENTS));
     localStorage.setItem('torneoapp_teams', JSON.stringify(INITIAL_TEAMS));
     localStorage.setItem('torneoapp_players', JSON.stringify(INITIAL_PLAYERS));
@@ -202,7 +36,21 @@ export function initializeDatabase() {
     localStorage.setItem('torneoapp_changes', JSON.stringify([]));
     localStorage.setItem('torneoapp_offline_sim', 'false');
     localStorage.setItem('torneoapp_initialized', 'true');
+  } else if (localStorage.getItem('torneoapp_schema_version') !== '2') {
+    // Migration: clear old seed data from previous versions
+    resetDatabase();
+    localStorage.setItem('torneoapp_schema_version', '2');
   }
+}
+
+export function resetDatabase() {
+  localStorage.setItem('torneoapp_tournaments', JSON.stringify(INITIAL_TOURNAMENTS));
+  localStorage.setItem('torneoapp_teams', JSON.stringify(INITIAL_TEAMS));
+  localStorage.setItem('torneoapp_players', JSON.stringify(INITIAL_PLAYERS));
+  localStorage.setItem('torneoapp_matches', JSON.stringify(INITIAL_MATCHES));
+  localStorage.setItem('torneoapp_events', JSON.stringify(INITIAL_EVENTS));
+  localStorage.setItem('torneoapp_changes', JSON.stringify([]));
+  dispatchEvent(new Event('torneoapp_data_updated'));
 }
 
 // Low level generic storage helper
@@ -270,6 +118,58 @@ export function getPlayers(): Player[] {
 
 export function getPlayersByTeam(teamId: string): Player[] {
   return getPlayers().filter(p => p.teamId === teamId);
+}
+
+export function addPlayer(player: Player): void {
+  const players = getPlayers();
+  players.push(player);
+  save('torneoapp_players', players);
+
+  if (getOfflineSimState()) {
+    addOfflineChange({
+      id: crypto.randomUUID(),
+      type: 'create_player',
+      timestamp: new Date().toISOString(),
+      description: `Jugador registrado: ${player.name} (#${player.number})`,
+      payload: player
+    });
+  }
+}
+
+export function updatePlayer(player: Player): void {
+  const players = getPlayers();
+  const idx = players.findIndex(p => p.id === player.id);
+  if (idx !== -1) {
+    players[idx] = player;
+    save('torneoapp_players', players);
+
+    if (getOfflineSimState()) {
+      addOfflineChange({
+        id: crypto.randomUUID(),
+        type: 'update_player',
+        timestamp: new Date().toISOString(),
+        description: `Jugador actualizado: ${player.name} (#${player.number})`,
+        payload: player
+      });
+    }
+  }
+}
+
+export function deletePlayer(playerId: string): void {
+  const players = getPlayers();
+  const playerToDelete = players.find(p => p.id === playerId);
+  const filteredPlayers = players.filter(p => p.id !== playerId);
+  save('torneoapp_players', filteredPlayers);
+
+  if (playerToDelete && getOfflineSimState()) {
+    addOfflineChange({
+      id: crypto.randomUUID(),
+      type: 'delete_player',
+      timestamp: new Date().toISOString(),
+      description: `Jugador eliminado: ${playerToDelete.name}`,
+      payload: playerToDelete
+    });
+  }
 }
 
 // Matches

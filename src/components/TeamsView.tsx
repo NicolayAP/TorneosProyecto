@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Search, Plus, Layers, UserPlus, Users, Trash2, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { Team, Player } from '../types';
 import { getTeams, addTeam, getPlayersByTeam } from '../utils/storage';
@@ -25,10 +26,7 @@ export function TeamsView({ onAddTeamSuccess }: TeamsViewProps) {
   const [selectedColor, setSelectedColor] = useState('#cd2626');
   
   // Players inside player lists inside the team registrar module
-  const [playerList, setPlayerList] = useState<{ name: string; number: number; position: string }[]>([
-    { name: 'Carlos Méndez', number: 10, position: 'Delantero' },
-    { name: 'Santi G.', number: 9, position: 'Mediocampista' }
-  ]);
+  const [playerList, setPlayerList] = useState<{ name: string; number: number; position: string }[]>([]);
   const [tempPlayerName, setTempPlayerName] = useState('');
   const [tempPlayerNumber, setTempPlayerNumber] = useState<number | ''>('');
   const [tempPlayerPosition, setTempPlayerPosition] = useState('Defensa');
@@ -95,10 +93,7 @@ export function TeamsView({ onAddTeamSuccess }: TeamsViewProps) {
 
     // Reset states
     setNewTeamName('');
-    setPlayerList([
-      { name: 'Juan Perez', number: 10, position: 'Delantero' },
-      { name: 'Andrés Gil', number: 1, position: 'Portero' }
-    ]);
+    setPlayerList([]);
     setShowAddDrawer(false);
     onAddTeamSuccess();
   };
@@ -147,9 +142,10 @@ export function TeamsView({ onAddTeamSuccess }: TeamsViewProps) {
         {filteredTeams.map((team) => {
           const isSuspended = team.status === 'suspended';
           return (
-            <div
+            <Link
               key={team.id}
-              className={`group relative rounded-2xl border bg-white p-5 shadow-xs transition-all hover:shadow-md ${
+              to={`/equipo/${team.id}`}
+              className={`group relative rounded-2xl border bg-white p-5 shadow-xs transition-all hover:shadow-md no-underline ${
                 isSuspended ? 'border-red-100 bg-red-50/5' : 'border-gray-100'
               }`}
             >
@@ -189,7 +185,7 @@ export function TeamsView({ onAddTeamSuccess }: TeamsViewProps) {
               <div className="mt-5 grid grid-cols-2 gap-4 border-t border-gray-50 pt-4">
                 <div className="space-y-1">
                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Jugadores</p>
-                  <p className="font-display text-sm font-extrabold text-gray-900">{team.playerCount}</p>
+                  <p className="font-display text-sm font-extrabold text-gray-900">{getPlayersByTeam(team.id).length}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Equipacion</p>
@@ -199,7 +195,7 @@ export function TeamsView({ onAddTeamSuccess }: TeamsViewProps) {
                   </div>
                 </div>
               </div>
-            </div>
+            </Link>
           );
         })}
       </section>
