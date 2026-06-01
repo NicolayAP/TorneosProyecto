@@ -7,6 +7,9 @@ import React, { useState } from 'react';
 import { Calendar, Layers, MapPin, AlignLeft, Info, Send, Save, ArrowLeft } from 'lucide-react';
 import { Tournament } from '../types';
 import { addTournament } from '../utils/storage';
+import { generateFixtures } from '../utils/storage';
+import { getTeams } from '../utils/storage';
+
 
 interface CreateTournamentFormProps {
   onBackToLeagues: () => void;
@@ -36,28 +39,35 @@ export function CreateTournamentForm({ onBackToLeagues, onSuccess }: CreateTourn
     }
   };
 
+
   const handleCreateSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) return;
+  e.preventDefault();
+  if (!name.trim()) return;
 
-    const newTournament: Tournament = {
-      id: `t_${Date.now()}`,
-      name,
-      sport,
-      format,
-      numTeams,
-      playersPerTeam,
-      startDate: startDate || '2026-10-01',
-      endDate: endDate || '2026-11-15',
-      status: 'active',
-      location: location || 'Canchas Municipales',
-      preferredDays,
-      startTime,
-      endTime
-    };
+  const newTournament: Tournament = {
+    id: `t_${Date.now()}`,
+    name,
+    sport,
+    format,
+    numTeams,
+    playersPerTeam,
+    startDate: startDate || '2026-10-01',
+    endDate: endDate || '2026-11-15',
+    status: 'draft',
+    location: location || 'Canchas Municipales',
+    preferredDays,
+    startTime,
+    endTime
+  };
 
-    addTournament(newTournament);
-    onSuccess();
+  // Guardar torneo
+  addTournament(newTournament);
+  
+  // Generar fixtures automáticamente
+  const teams = getTeams();
+  generateFixtures(newTournament, teams);
+  
+  onSuccess();
   };
 
   return (

@@ -70,6 +70,10 @@ export function getTournaments(): Tournament[] {
   return get<Tournament>('torneoapp_tournaments');
 }
 
+export function getTournamentById(tournamentId: string): Tournament | null {
+  return getTournaments().find(t => t.id === tournamentId) || null;
+}
+
 export function addTournament(tournament: Tournament): void {
   const tournaments = getTournaments();
   tournaments.push(tournament);
@@ -83,6 +87,25 @@ export function addTournament(tournament: Tournament): void {
       description: `Torneo registrado: ${tournament.name}`,
       payload: tournament
     });
+  }
+}
+
+export function updateTournament(tournament: Tournament): void {
+  const tournaments = getTournaments();
+  const idx = tournaments.findIndex(t => t.id === tournament.id);
+  if (idx !== -1) {
+    tournaments[idx] = tournament;
+    save('torneoapp_tournaments', tournaments);
+
+    if (getOfflineSimState()) {
+      addOfflineChange({
+        id: crypto.randomUUID(),
+        type: 'update_tournament',
+        timestamp: new Date().toISOString(),
+        description: `Torneo actualizado: ${tournament.name}`,
+        payload: tournament
+      });
+    }
   }
 }
 
@@ -177,6 +200,26 @@ export function getMatches(): Match[] {
   return get<Match>('torneoapp_matches');
 }
 
+export function getMatchesByTournament(tournamentId: string): Match[] {
+  return getMatches().filter(m => m.tournamentId === tournamentId);
+}
+
+export function addMatch(match: Match): void {
+  const matches = getMatches();
+  matches.push(match);
+  save('torneoapp_matches', matches);
+
+  if (getOfflineSimState()) {
+    addOfflineChange({
+      id: crypto.randomUUID(),
+      type: 'create_match',
+      timestamp: new Date().toISOString(),
+      description: `Partido generado: ${match.teamAName} vs ${match.teamBName}`,
+      payload: match
+    });
+  }
+}
+
 export function updateMatch(match: Match): void {
   const matches = getMatches();
   const idx = matches.findIndex(m => m.id === match.id);
@@ -267,4 +310,43 @@ export function uploadOfflineQueueToServer(onSuccess: () => void) {
     clearOfflineChanges();
     onSuccess();
   }, 1800);
+}
+
+export function generateFixtures(tournament: Tournament, teams: Team[]): void {
+  const teamsForTournament = teams.slice(0, tournament.numTeams);
+  const matches: Match[] = [];
+  const matchday = `Jornada 1`;
+
+  if (tournament.format === 'league') {
+    // Fixture liga (todos vs todos - ida)
+    for (let i = 0; i < teamsForTournament.length; i++) {
+      for (let j = i + 1; j < teamsForTournament.length; j++) {
+        const teamA = teamsForTournament[i];
+        const teamB = teamsForTournament[j];
+        
+        const match: Match = {
+          id: `m_${tournament.id}_${i}_${j}`,
+          tournamentId: tournament.id,
+          tournamentName: tournament.name,
+          matchday,
+          teamAId: teamA.id,
+          teamBId: teamB.id,
+          teamAName: teamA.name,
+          teamBName: teamB.name,
+          scoreA: 0,
+          scoreB: 0,
+          status: 'scheduled',
+          location: tournament.location,
+          time: tournament.startTime,
+          date: tournament.startDate,
+          refereeName: 'Árbitro por asignar'
+        };
+        
+        matches.push(match);
+      }
+    }
+  }
+
+  // Guardar todos los partidos
+  matches.forEach(m => addMatch(m));
 }

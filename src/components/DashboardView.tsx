@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Trophy, Users, Landmark, Clock, CheckCircle, PlusCircle, ArrowRight, Download, Printer, Activity } from 'lucide-react';
 import { Match, Team, Tournament } from '../types';
 import { getMatches, getTeams, getTournaments } from '../utils/storage';
@@ -16,6 +17,7 @@ interface DashboardViewProps {
 }
 
 export function DashboardView({ onNavigateToTab, onOpenCreateTournament, onOpenCreateTeam }: DashboardViewProps) {
+  const navigate = useNavigate();
   const matches = getMatches();
   const teams = getTeams();
   const tournaments = getTournaments();
@@ -111,7 +113,59 @@ export function DashboardView({ onNavigateToTab, onOpenCreateTournament, onOpenC
         </div>
       </section>
 
-      {/* 3. Main Dashboard Layout Section */}
+      {/* 3. Torneos Activos Section */}
+      {tournaments.length > 0 && (
+        <section className="rounded-2xl border border-gray-100 bg-white p-5 shadow-xs">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="font-display text-lg font-bold text-gray-900">Mis Torneos</h3>
+              <p className="text-xs text-gray-500">Haz click en un torneo para gestionar detalles</p>
+            </div>
+            <button
+              onClick={onOpenCreateTournament}
+              className="flex items-center gap-1.5 rounded-lg bg-[#fcd400] text-[#6e5c00] px-3 py-1.5 text-xs font-bold hover:bg-yellow-400 transition-all"
+            >
+              <PlusCircle size={14} />
+              Nuevo Torneo
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {tournaments.map((tournament) => (
+              <button
+                key={tournament.id}
+                onClick={() => navigate(`/torneo/${tournament.id}`)}
+                className="text-left rounded-lg border border-gray-100 bg-gray-50 p-4 hover:border-gray-300 hover:bg-white hover:shadow-md transition-all group"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Trophy size={14} className="text-yellow-600" />
+                      <h4 className="font-semibold text-sm text-gray-900 group-hover:text-[#0b1f18]">{tournament.name}</h4>
+                    </div>
+                    <p className="text-xs text-gray-500 mb-2">{tournament.sport}</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase text-gray-600 bg-gray-100">
+                        {tournament.format === 'league' ? 'Liga' : tournament.format}
+                      </span>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                        tournament.status === 'draft' ? 'text-gray-600 bg-gray-100' :
+                        tournament.status === 'active' ? 'text-green-700 bg-green-100' :
+                        'text-blue-700 bg-blue-100'
+                      }`}>
+                        {tournament.status === 'draft' ? 'Borrador' : tournament.status === 'active' ? 'Activo' : 'Finalizado'}
+                      </span>
+                    </div>
+                  </div>
+                  <ArrowRight size={16} className="text-gray-400 group-hover:text-gray-600 group-hover:translate-x-1 transition-all mt-1" />
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 4. Main Dashboard Layout Section */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         {/* Left/Center Column: Upcoming or Live Matches Row Preview */}
         <section className="rounded-2xl border border-gray-100 bg-white p-5 shadow-xs lg:col-span-8 flex flex-col justify-between">

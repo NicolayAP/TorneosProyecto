@@ -71,7 +71,7 @@ export interface MatchEvent {
 
 export interface OfflineChange {
   id: string;
-  type: 'create_tournament' | 'create_team' | 'record_match_event' | 'finalize_match';
+  type: 'create_tournament' | 'create_team' | 'record_match_event' | 'finalize_match' | 'update_tournament' | 'create_player' | 'update_player' | 'delete_player' | 'create_match';
   timestamp: string;
   description: string;
   payload: any;

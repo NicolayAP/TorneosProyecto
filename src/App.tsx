@@ -22,6 +22,7 @@ import {
   getTeams,
   getMatches
 } from './utils/storage';
+import { TournamentDetailView } from './components/TournamentDetailView';
 
 import { Shield, Sparkles, RefreshCw, WifiOff, Trash2, Check, CloudLightning } from 'lucide-react';
 
@@ -74,6 +75,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/equipo/:id" element={<TeamDetailView />} />
+      <Route path="/torneo/:id" element={<TournamentDetailView />} />
       <Route 
         path="/" 
         element={
