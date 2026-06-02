@@ -198,7 +198,30 @@ export function deletePlayer(playerId: string): void {
     });
   }
 }
+export function getTeamsByTournament(tournamentId: string): Team[] {
+  return getTeams().filter(t => t.tournamentIds?.includes(tournamentId));
+}
 
+export function addTeamToTournament(teamId: string, tournamentId: string): void {
+  const teams = getTeams();
+  const idx = teams.findIndex(t => t.id === teamId);
+  if (idx === -1) return;
+  const team = teams[idx];
+  const ids = team.tournamentIds ?? [];
+  if (!ids.includes(tournamentId)) {
+    teams[idx] = { ...team, tournamentIds: [...ids, tournamentId] };
+    save('torneoapp_teams', teams);
+  }
+}
+
+export function removeTeamFromTournament(teamId: string, tournamentId: string): void {
+  const teams = getTeams();
+  const idx = teams.findIndex(t => t.id === teamId);
+  if (idx === -1) return;
+  const team = teams[idx];
+  teams[idx] = { ...team, tournamentIds: (team.tournamentIds ?? []).filter(id => id !== tournamentId) };
+  save('torneoapp_teams', teams);
+}
 // Referees
 export function getReferees(): Referee[] {
   return get<Referee>('torneoapp_referees');
@@ -334,28 +357,43 @@ export function clearOfflineChanges(): void {
   dispatchEvent(new Event('torneoapp_changes_count_updated'));
 }
 
-export function uploadOfflineQueueToServer(onSuccess: () => void) {
-  // Simulate network synchronization delay
-  setTimeout(() => {
-    clearOfflineChanges();
-    onSuccess();
-  }, 1800);
+export function uploadOfflineQueueToServer(onSuccess: () => void, onError?: (err: string) => void) {
+  import('./syncQueue').then(({ syncQueueToBackend }) => {
+    const changes = getOfflineChanges();
+    syncQueueToBackend(changes, () => {
+      clearOfflineChanges();
+      onSuccess();
+    }, onError);
+  });
 }
 
 export function generateFixtures(tournament: Tournament, teams: Team[]): void {
   const teamsForTournament = teams.slice(0, tournament.numTeams);
+  if (teamsForTournament.length < 2) return; // necesitamos al menos 2 equipos
+
   const matches: Match[] = [];
-  const matchday = `Jornada 1`;
+  let matchIndex = 0;
 
   if (tournament.format === 'league') {
-    // Fixture liga (todos vs todos - ida)
-    for (let i = 0; i < teamsForTournament.length; i++) {
-      for (let j = i + 1; j < teamsForTournament.length; j++) {
-        const teamA = teamsForTournament[i];
-        const teamB = teamsForTournament[j];
-        
+    // Algoritmo round-robin: distribuye partidos en jornadas reales
+    const n = teamsForTournament.length;
+    const rounds = n % 2 === 0 ? n - 1 : n;
+    const teamsCopy = [...teamsForTournament];
+    if (n % 2 !== 0) teamsCopy.push({ id: 'bye', name: 'DESCANSO' } as Team);
+
+    const totalTeams = teamsCopy.length;
+
+    for (let round = 0; round < rounds; round++) {
+      const matchday = `Jornada ${round + 1}`;
+
+      for (let i = 0; i < totalTeams / 2; i++) {
+        const teamA = teamsCopy[i];
+        const teamB = teamsCopy[totalTeams - 1 - i];
+
+        if (teamA.id === 'bye' || teamB.id === 'bye') continue;
+
         const match: Match = {
-          id: `m_${tournament.id}_${i}_${j}`,
+          id: `m_${tournament.id}_${matchIndex++}`,
           tournamentId: tournament.id,
           tournamentName: tournament.name,
           matchday,
@@ -369,14 +407,16 @@ export function generateFixtures(tournament: Tournament, teams: Team[]): void {
           location: tournament.location,
           time: tournament.startTime,
           date: tournament.startDate,
-          refereeName: 'Árbitro por asignar'
+          refereeName: 'Árbitro por asignar',
         };
-        
+
         matches.push(match);
       }
+
+      // Rotar equipos manteniendo el primero fijo (algoritmo estándar)
+      teamsCopy.splice(1, 0, teamsCopy.pop()!);
     }
   }
 
-  // Guardar todos los partidos
   matches.forEach(m => addMatch(m));
 }

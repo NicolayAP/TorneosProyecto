@@ -3,55 +3,97 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
-import { Filter, CalendarDays, Search, MapPin, Map, RefreshCw, PlusCircle, ArrowRight, Info, Check, ShieldAlert, X } from 'lucide-react';
-import { Match, Referee } from '../types';
-import { getMatches, updateMatch, getReferees } from '../utils/storage';
+import React, { useState, useEffect } from "react";
+import {
+  Filter,
+  CalendarDays,
+  Search,
+  MapPin,
+  Map,
+  RefreshCw,
+  PlusCircle,
+  ArrowRight,
+  Info,
+  Check,
+  ShieldAlert,
+  X,
+} from "lucide-react";
+import { Match, Referee } from "../types";
+import { getMatches, updateMatch, getReferees } from "../utils/storage";
 
 interface FixturesViewProps {
   onManageMatch: (matchId: string) => void;
   onOpenCreateTournament: () => void;
 }
 
-export function FixturesView({ onManageMatch, onOpenCreateTournament }: FixturesViewProps) {
+export function FixturesView({
+  onManageMatch,
+  onOpenCreateTournament,
+}: FixturesViewProps) {
   const [renderTick, setRenderTick] = useState(0);
-  const matches = getMatches();
   const [showRefPicker, setShowRefPicker] = useState<string | null>(null);
 
+  // Leer matches reactivamente
+  const matches = React.useMemo(() => getMatches(), [renderTick]);
+
+  // Derivar jornadas disponibles de los partidos reales
+  const matchdays = React.useMemo(() => {
+    const days = [...new Set(matches.map((m) => m.matchday))];
+    if (days.length === 0) return ["Jornada 1"];
+    return days.sort((a, b) => {
+      const na = parseInt(a.replace(/\D/g, "")) || 0;
+      const nb = parseInt(b.replace(/\D/g, "")) || 0;
+      return na - nb;
+    });
+  }, [matches]);
+
   useEffect(() => {
-    const handler = () => setRenderTick(t => t + 1);
-    window.addEventListener('torneoapp_data_updated', handler);
-    return () => window.removeEventListener('torneoapp_data_updated', handler);
+    const handler = () => setRenderTick((t) => t + 1);
+    window.addEventListener("torneoapp_data_updated", handler);
+    return () => window.removeEventListener("torneoapp_data_updated", handler);
   }, []);
 
   // Re-read matches when renderTick changes (data updated event)
   void renderTick;
 
-  const [search, setSearch] = useState('');
-  const [selectedMatchday, setSelectedMatchday] = useState('Jornada 3');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'live' | 'scheduled' | 'finished'>('all');
-  const [selectedStadium, setSelectedStadium] = useState('All');
+  const [search, setSearch] = useState("");
+  const [selectedMatchday, setSelectedMatchday] = useState('');
 
-  // Matchdays preloaded list content
-  const matchdays = ["Jornada 1", "Jornada 2", "Jornada 3", "Jornada 4", "Jornada 5", "Fase de Grupos"];
+// Seleccionar primera jornada disponible cuando cambian los matches
+React.useEffect(() => {
+  if (matchdays.length > 0 && (!selectedMatchday || !matchdays.includes(selectedMatchday))) {
+    setSelectedMatchday(matchdays[0]);
+  }
+}, [matchdays]);
+  const [filterStatus, setFilterStatus] = useState<
+    "all" | "live" | "scheduled" | "finished"
+  >("all");
+  const [selectedStadium, setSelectedStadium] = useState("All");
 
   // Unique venues list derived
-  const stadiums = ["All", "Estadio Santiago Bernabéu", "Etihad Stadium", "Anfield Road", "Cancha 1", "Cancha 2"];
+  const stadiums = [
+    "All",
+    "Estadio Santiago Bernabéu",
+    "Etihad Stadium",
+    "Anfield Road",
+    "Cancha 1",
+    "Cancha 2",
+  ];
 
   // Filter implementation
-  const filteredMatches = matches.filter(m => {
-    const matchesSearch = 
-      m.teamAName.toLowerCase().includes(search.toLowerCase()) || 
+  const filteredMatches = matches.filter((m) => {
+    const matchesSearch =
+      m.teamAName.toLowerCase().includes(search.toLowerCase()) ||
       m.teamBName.toLowerCase().includes(search.toLowerCase()) ||
       m.tournamentName.toLowerCase().includes(search.toLowerCase());
-    
-    const matchesMatchday = m.matchday === selectedMatchday;
-    
-    const matchesStatus = 
-      filterStatus === 'all' ? true : m.status === filterStatus;
 
-    const matchesStadium = 
-      selectedStadium === 'All' ? true : m.location === selectedStadium;
+    const matchesMatchday = m.matchday === selectedMatchday;
+
+    const matchesStatus =
+      filterStatus === "all" ? true : m.status === filterStatus;
+
+    const matchesStadium =
+      selectedStadium === "All" ? true : m.location === selectedStadium;
 
     return matchesSearch && matchesMatchday && matchesStatus && matchesStadium;
   });
@@ -61,8 +103,12 @@ export function FixturesView({ onManageMatch, onOpenCreateTournament }: Fixtures
       {/* 1. Header Section */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="font-display text-xl font-bold text-gray-900 md:text-2xl">Fixtures & Programación</h2>
-          <p className="text-xs text-gray-500">Agendamiento general y controladores de canchas para árbitros</p>
+          <h2 className="font-display text-xl font-bold text-gray-900 md:text-2xl">
+            Fixtures & Programación
+          </h2>
+          <p className="text-xs text-gray-500">
+            Agendamiento general y controladores de canchas para árbitros
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -85,11 +131,11 @@ export function FixturesView({ onManageMatch, onOpenCreateTournament }: Fixtures
               onClick={() => setSelectedMatchday(day)}
               className={`whitespace-nowrap rounded-full px-5 py-2 text-xs font-semibold tracking-wide transition-all ${
                 isActive
-                  ? 'bg-[#fcd400] text-[#6e5c00] font-black shadow-xs border border-yellow-300'
-                  : 'bg-white text-gray-600 border border-gray-100 hover:bg-gray-50'
+                  ? "bg-[#fcd400] text-[#6e5c00] font-black shadow-xs border border-yellow-300"
+                  : "bg-white text-gray-600 border border-gray-100 hover:bg-gray-50"
               }`}
             >
-              {day === "Jornada 3" ? `${day} (ACTIVA)` : day}
+              {day}
             </button>
           );
         })}
@@ -99,7 +145,6 @@ export function FixturesView({ onManageMatch, onOpenCreateTournament }: Fixtures
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
         {/* Left Column: Matches list grouped by status or Date */}
         <section className="space-y-5 xl:col-span-8">
-          
           {/* Quick inline search panel for Mobile */}
           <div className="no-print relative flex items-center md:hidden">
             <span className="absolute left-3.5 text-gray-400">
@@ -117,31 +162,44 @@ export function FixturesView({ onManageMatch, onOpenCreateTournament }: Fixtures
           <div className="space-y-4">
             {filteredMatches.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-gray-200 bg-white py-16 text-center shadow-xs">
-                <CalendarDays size={36} className="mx-auto text-gray-300 mb-3" />
-                <p className="text-sm font-semibold text-gray-700">No hay partidos en esta fecha</p>
+                <CalendarDays
+                  size={36}
+                  className="mx-auto text-gray-300 mb-3"
+                />
+                <p className="text-sm font-semibold text-gray-700">
+                  No hay partidos en esta fecha
+                </p>
                 <p className="text-xs text-gray-400 max-w-sm mx-auto mt-1">
-                  No se encontraron encuentros para <strong className="text-[#0b1f18]">{selectedMatchday}</strong> con los criterios seleccionados.
+                  No se encontraron encuentros para{" "}
+                  <strong className="text-[#0b1f18]">{selectedMatchday}</strong>{" "}
+                  con los criterios seleccionados.
                 </p>
               </div>
             ) : (
               filteredMatches.map((m) => {
-                const isLive = m.status === 'live';
-                const isFinished = m.status === 'finished';
+                const isLive = m.status === "live";
+                const isFinished = m.status === "finished";
                 return (
                   <div
                     key={m.id}
                     className={`relative overflow-hidden rounded-2xl border bg-white shadow-xs transition-shadow hover:shadow-md ${
-                      isLive 
-                        ? 'border-red-200 bg-red-50/10' 
-                        : isFinished 
-                          ? 'border-gray-100 opacity-95' 
-                          : 'border-gray-100'
+                      isLive
+                        ? "border-red-200 bg-red-50/10"
+                        : isFinished
+                          ? "border-gray-100 opacity-95"
+                          : "border-gray-100"
                     }`}
                   >
                     {/* Visual left vertical bar matching design specs */}
-                    <div className={`absolute top-0 bottom-0 left-0 w-1 ${
-                      isLive ? 'bg-red-500' : isFinished ? 'bg-gray-400' : 'bg-yellow-400'
-                    }`} />
+                    <div
+                      className={`absolute top-0 bottom-0 left-0 w-1 ${
+                        isLive
+                          ? "bg-red-500"
+                          : isFinished
+                            ? "bg-gray-400"
+                            : "bg-yellow-400"
+                      }`}
+                    />
 
                     <div className="p-5 space-y-4">
                       {/* Card meta header */}
@@ -181,7 +239,7 @@ export function FixturesView({ onManageMatch, onOpenCreateTournament }: Fixtures
                             {m.teamAName}
                           </span>
                           <div className="h-9 w-9 rounded-full bg-gray-50 flex items-center justify-center font-display text-xs font-bold text-gray-500 border border-gray-100 order-1 sm:order-2">
-                            {m.teamAName.substring(0,2).toUpperCase()}
+                            {m.teamAName.substring(0, 2).toUpperCase()}
                           </div>
                         </div>
 
@@ -189,9 +247,15 @@ export function FixturesView({ onManageMatch, onOpenCreateTournament }: Fixtures
                         <div className="flex flex-col items-center justify-center">
                           {isFinished || isLive ? (
                             <div className="flex items-center gap-4 text-center">
-                              <span className="font-display text-3xl font-black text-[#0b1f18]">{m.scoreA}</span>
-                              <span className="text-gray-300 font-display text-xl font-bold">-</span>
-                              <span className="font-display text-3xl font-black text-[#0b1f18]">{m.scoreB}</span>
+                              <span className="font-display text-3xl font-black text-[#0b1f18]">
+                                {m.scoreA}
+                              </span>
+                              <span className="text-gray-300 font-display text-xl font-bold">
+                                -
+                              </span>
+                              <span className="font-display text-3xl font-black text-[#0b1f18]">
+                                {m.scoreB}
+                              </span>
                             </div>
                           ) : (
                             <div className="rounded-lg bg-gray-100 px-4 py-1.5 text-center font-display text-sm font-bold text-[#0b1f18] border border-gray-100 min-w-[100px]">
@@ -203,7 +267,7 @@ export function FixturesView({ onManageMatch, onOpenCreateTournament }: Fixtures
                         {/* Team B competitor */}
                         <div className="flex items-center gap-3 justify-start">
                           <div className="h-9 w-9 rounded-full bg-gray-50 flex items-center justify-center font-display text-xs font-bold text-gray-500 border border-gray-100">
-                            {m.teamBName.substring(0,2).toUpperCase()}
+                            {m.teamBName.substring(0, 2).toUpperCase()}
                           </div>
                           <span className="font-display text-sm font-bold text-gray-900 sm:text-base">
                             {m.teamBName}
@@ -214,50 +278,65 @@ export function FixturesView({ onManageMatch, onOpenCreateTournament }: Fixtures
                       {/* Card meta footer / Admin quick controller */}
                       <div className="flex flex-col gap-2 pt-3 border-t border-gray-100 sm:flex-row sm:items-center sm:justify-between text-xs text-gray-500">
                         <p className="font-medium">
-                          Árbitro Principal: <strong className="text-gray-800">{m.refereeName || 'Por definir'}</strong>
+                          Árbitro Principal:{" "}
+                          <strong className="text-gray-800">
+                            {m.refereeName || "Por definir"}
+                          </strong>
                         </p>
-                        
+
                         <div className="flex justify-end gap-2">
                           {isLive || isFinished ? (
                             <button
                               onClick={() => onManageMatch(m.id)}
                               className={`rounded-lg px-4 py-2 font-bold tracking-wide transition-all ${
-                                isLive 
-                                  ? 'bg-red-600 text-white hover:bg-red-700 shadow-sm'
-                                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                isLive
+                                  ? "bg-red-600 text-white hover:bg-red-700 shadow-sm"
+                                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                               }`}
                             >
-                              {isLive ? 'Controlar En Vivo' : 'Ver Estadísticas'}
+                              {isLive
+                                ? "Controlar En Vivo"
+                                : "Ver Estadísticas"}
                             </button>
                           ) : (
                             <div className="flex gap-2">
                               <button
-                                onClick={() => setShowRefPicker(showRefPicker === m.id ? null : m.id)}
+                                onClick={() =>
+                                  setShowRefPicker(
+                                    showRefPicker === m.id ? null : m.id,
+                                  )
+                                }
                                 className="rounded-lg px-3 py-2 font-bold tracking-wide transition-all bg-[#fcd400] text-[#6e5c00] hover:bg-yellow-400"
                               >
-                                {m.refereeName && m.refereeName !== 'Árbitro por asignar' ? (
+                                {m.refereeName &&
+                                m.refereeName !== "Árbitro por asignar" ? (
                                   <span className="flex items-center gap-1.5 text-xs">
                                     <ShieldAlert size={14} />
                                     {m.refereeName}
                                   </span>
                                 ) : (
-                                  <span className="text-xs">Asignar Árbitro</span>
+                                  <span className="text-xs">
+                                    Asignar Árbitro
+                                  </span>
                                 )}
                               </button>
-                              {m.refereeName && m.refereeName !== 'Árbitro por asignar' && (
-                                <button
-                                  onClick={() => {
-                                    m.status = 'live';
-                                    m.liveMinute = 0;
-                                    updateMatch(m);
-                                    window.dispatchEvent(new Event('torneoapp_data_updated'));
-                                    onManageMatch(m.id);
-                                  }}
-                                  className="rounded-lg px-3 py-2 text-xs font-bold tracking-wide transition-all bg-emerald-600 text-white hover:bg-emerald-700"
-                                >
-                                  Iniciar Partido
-                                </button>
-                              )}
+                              {m.refereeName &&
+                                m.refereeName !== "Árbitro por asignar" && (
+                                  <button
+                                    onClick={() => {
+                                      m.status = "live";
+                                      m.liveMinute = 0;
+                                      updateMatch(m);
+                                      window.dispatchEvent(
+                                        new Event("torneoapp_data_updated"),
+                                      );
+                                      onManageMatch(m.id);
+                                    }}
+                                    className="rounded-lg px-3 py-2 text-xs font-bold tracking-wide transition-all bg-emerald-600 text-white hover:bg-emerald-700"
+                                  >
+                                    Iniciar Partido
+                                  </button>
+                                )}
                             </div>
                           )}
                         </div>
@@ -280,9 +359,9 @@ export function FixturesView({ onManageMatch, onOpenCreateTournament }: Fixtures
               </h3>
               <button
                 onClick={() => {
-                  setSearch('');
-                  setSelectedStadium('All');
-                  setFilterStatus('all');
+                  setSearch("");
+                  setSelectedStadium("All");
+                  setFilterStatus("all");
                 }}
                 className="text-[10px] text-gray-400 font-bold tracking-wide uppercase hover:text-gray-900"
               >
@@ -293,7 +372,9 @@ export function FixturesView({ onManageMatch, onOpenCreateTournament }: Fixtures
             <div className="mt-4 space-y-4">
               {/* Search query input */}
               <div className="space-y-1.5">
-                <label className="block text-[11px] font-bold text-gray-400 uppercase">Buscar Equipo</label>
+                <label className="block text-[11px] font-bold text-gray-400 uppercase">
+                  Buscar Equipo
+                </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
                     <Search size={14} />
@@ -310,21 +391,23 @@ export function FixturesView({ onManageMatch, onOpenCreateTournament }: Fixtures
 
               {/* Status checkboxes */}
               <div className="space-y-2">
-                <label className="block text-[11px] font-bold text-gray-400 uppercase">Estado del Encuentro</label>
+                <label className="block text-[11px] font-bold text-gray-400 uppercase">
+                  Estado del Encuentro
+                </label>
                 <div className="flex flex-wrap gap-1.5">
                   {[
-                    { id: 'all', label: 'Todos' },
-                    { id: 'live', label: 'En Vivo' },
-                    { id: 'scheduled', label: 'Programado' },
-                    { id: 'finished', label: 'Finalizado' }
-                  ].map(stat => (
+                    { id: "all", label: "Todos" },
+                    { id: "live", label: "En Vivo" },
+                    { id: "scheduled", label: "Programado" },
+                    { id: "finished", label: "Finalizado" },
+                  ].map((stat) => (
                     <button
                       key={stat.id}
                       onClick={() => setFilterStatus(stat.id as any)}
                       className={`rounded-full px-3 py-1 text-[11px] font-bold transition-all ${
-                        filterStatus === stat.id 
-                          ? 'bg-[#0b1f18] text-white' 
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        filterStatus === stat.id
+                          ? "bg-[#0b1f18] text-white"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                       }`}
                     >
                       {stat.label}
@@ -335,7 +418,9 @@ export function FixturesView({ onManageMatch, onOpenCreateTournament }: Fixtures
 
               {/* Sede lists selector dropdown */}
               <div className="space-y-1.5">
-                <label className="block text-[11px] font-bold text-gray-400 uppercase">Sede de Campo</label>
+                <label className="block text-[11px] font-bold text-gray-400 uppercase">
+                  Sede de Campo
+                </label>
                 <select
                   value={selectedStadium}
                   onChange={(e) => setSelectedStadium(e.target.value)}
@@ -343,7 +428,7 @@ export function FixturesView({ onManageMatch, onOpenCreateTournament }: Fixtures
                 >
                   {stadiums.map((stadium) => (
                     <option key={stadium} value={stadium}>
-                      {stadium === 'All' ? 'Todas las sedes' : stadium}
+                      {stadium === "All" ? "Todas las sedes" : stadium}
                     </option>
                   ))}
                 </select>
@@ -356,7 +441,9 @@ export function FixturesView({ onManageMatch, onOpenCreateTournament }: Fixtures
                   <span>Configuración Árbitros</span>
                 </p>
                 <p className="leading-relaxed text-gray-700 text-[11px]">
-                  Todos los registrados como árbitros autorizados pueden controlar en directo las planillas, goles e incidencias desde este portal deportivo de juego.
+                  Todos los registrados como árbitros autorizados pueden
+                  controlar en directo las planillas, goles e incidencias desde
+                  este portal deportivo de juego.
                 </p>
               </div>
             </div>
@@ -374,28 +461,36 @@ export function FixturesView({ onManageMatch, onOpenCreateTournament }: Fixtures
   );
 }
 
-function RefereePickerModal({ matchId, onClose, onStartMatch }: { matchId: string; onClose: () => void; onStartMatch?: (id: string) => void }) {
-  const referees = getReferees().filter(r => r.status === 'active');
+function RefereePickerModal({
+  matchId,
+  onClose,
+  onStartMatch,
+}: {
+  matchId: string;
+  onClose: () => void;
+  onStartMatch?: (id: string) => void;
+}) {
+  const referees = getReferees().filter((r) => r.status === "active");
   const matches = getMatches();
-  const match = matches.find(m => m.id === matchId);
+  const match = matches.find((m) => m.id === matchId);
 
   const handleAssign = (referee: Referee) => {
     if (!match) return;
     match.refereeName = referee.name;
     updateMatch(match);
-    window.dispatchEvent(new Event('torneoapp_data_updated'));
+    window.dispatchEvent(new Event("torneoapp_data_updated"));
   };
 
   const handleRemove = () => {
     if (!match) return;
-    match.refereeName = 'Árbitro por asignar';
+    match.refereeName = "Árbitro por asignar";
     updateMatch(match);
-    window.dispatchEvent(new Event('torneoapp_data_updated'));
+    window.dispatchEvent(new Event("torneoapp_data_updated"));
   };
 
   const handleStart = () => {
     if (!match) return;
-    match.status = 'live';
+    match.status = "live";
     match.liveMinute = 0;
     updateMatch(match);
     if (onStartMatch) onStartMatch(match.id);
@@ -404,19 +499,32 @@ function RefereePickerModal({ matchId, onClose, onStartMatch }: { matchId: strin
   if (!match) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4" onClick={onClose}>
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl border border-gray-100 animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl border border-gray-100 animate-in fade-in zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="font-display text-lg font-bold text-gray-900">Asignar Árbitro</h3>
-            <p className="text-xs text-gray-500 mt-0.5">{match.teamAName} vs {match.teamBName}</p>
+            <h3 className="font-display text-lg font-bold text-gray-900">
+              Asignar Árbitro
+            </h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {match.teamAName} vs {match.teamBName}
+            </p>
           </div>
-          <button onClick={onClose} className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-900">
+          <button
+            onClick={onClose}
+            className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-900"
+          >
             <X size={18} />
           </button>
         </div>
 
-        {match.refereeName && match.refereeName !== 'Árbitro por asignar' && (
+        {match.refereeName && match.refereeName !== "Árbitro por asignar" && (
           <div className="mb-4 rounded-xl bg-yellow-50 border border-yellow-200 p-3 flex items-center justify-between">
             <span className="text-xs font-semibold text-yellow-800">
               Actual: <strong>{match.refereeName}</strong>
@@ -433,8 +541,12 @@ function RefereePickerModal({ matchId, onClose, onStartMatch }: { matchId: strin
         {referees.length === 0 ? (
           <div className="py-8 text-center">
             <ShieldAlert size={28} className="mx-auto text-gray-300 mb-2" />
-            <p className="text-sm font-semibold text-gray-600">No hay árbitros activos</p>
-            <p className="text-xs text-gray-400 mt-1">Registra árbitros desde la sección Árbitros.</p>
+            <p className="text-sm font-semibold text-gray-600">
+              No hay árbitros activos
+            </p>
+            <p className="text-xs text-gray-400 mt-1">
+              Registra árbitros desde la sección Árbitros.
+            </p>
           </div>
         ) : (
           <div className="space-y-2 max-h-72 overflow-y-auto">
@@ -446,8 +558,8 @@ function RefereePickerModal({ matchId, onClose, onStartMatch }: { matchId: strin
                   onClick={() => handleAssign(ref)}
                   className={`w-full text-left rounded-xl border p-3.5 transition-all hover:shadow-sm ${
                     isSelected
-                      ? 'border-[#fcd400] bg-yellow-50'
-                      : 'border-gray-100 bg-white hover:border-gray-200'
+                      ? "border-[#fcd400] bg-yellow-50"
+                      : "border-gray-100 bg-white hover:border-gray-200"
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -456,17 +568,29 @@ function RefereePickerModal({ matchId, onClose, onStartMatch }: { matchId: strin
                         {ref.name.substring(0, 2).toUpperCase()}
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-gray-900">{ref.name}</p>
+                        <p className="text-sm font-bold text-gray-900">
+                          {ref.name}
+                        </p>
                         {ref.specializations.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-0.5">
                             {ref.specializations.slice(0, 2).map((s, i) => (
-                              <span key={i} className="text-[9px] font-bold text-gray-400 uppercase">{s}{i < Math.min(ref.specializations.length, 2) - 1 ? ',' : ''}</span>
+                              <span
+                                key={i}
+                                className="text-[9px] font-bold text-gray-400 uppercase"
+                              >
+                                {s}
+                                {i < Math.min(ref.specializations.length, 2) - 1
+                                  ? ","
+                                  : ""}
+                              </span>
                             ))}
                           </div>
                         )}
                       </div>
                     </div>
-                    {isSelected && <Check size={18} className="text-[#fcd400]" />}
+                    {isSelected && (
+                      <Check size={18} className="text-[#fcd400]" />
+                    )}
                   </div>
                 </button>
               );
@@ -475,14 +599,16 @@ function RefereePickerModal({ matchId, onClose, onStartMatch }: { matchId: strin
         )}
 
         <div className="mt-5 flex justify-end gap-2">
-          {match.refereeName && match.refereeName !== 'Árbitro por asignar' && onStartMatch && (
-            <button
-              onClick={handleStart}
-              className="flex-1 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700"
-            >
-              Iniciar Partido y Controlar
-            </button>
-          )}
+          {match.refereeName &&
+            match.refereeName !== "Árbitro por asignar" &&
+            onStartMatch && (
+              <button
+                onClick={handleStart}
+                className="flex-1 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700"
+              >
+                Iniciar Partido y Controlar
+              </button>
+            )}
           <button
             onClick={onClose}
             className="rounded-lg bg-gray-100 px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-200"
