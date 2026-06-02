@@ -28,6 +28,7 @@ export interface Team {
   color: string;
   status: 'active' | 'suspended' | 'inactive';
   playerCount: number;
+  tournamentIds?: string[]; // un equipo puede estar en varios torneos
 }
 
 export interface Player {

@@ -3,11 +3,24 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useRef, useState } from 'react';
-import { CheckCircle2, ChevronLeft, Pause, Play, Plus } from 'lucide-react';
-import { Match, MatchEvent, Player } from '../types';
-import { getMatchEvents, addMatchEvent } from '../db/events';
-import { finalizeMatch, getMatches, getOfflineSimState, getPlayersByTeam, updateMatch } from '../utils/storage';
+import React, { useEffect, useRef, useState } from "react";
+import {
+  CheckCircle2,
+  ChevronLeft,
+  FileDown,
+  Pause,
+  Play,
+  Plus,
+} from "lucide-react";
+import { Match, MatchEvent, Player } from "../types";
+import { getMatchEvents, addMatchEvent } from "../db/events";
+import {
+  finalizeMatch,
+  getMatches,
+  getOfflineSimState,
+  getPlayersByTeam,
+  updateMatch,
+} from "../utils/storage";
 
 interface RefereePortalProps {
   matchId: string;
@@ -15,7 +28,11 @@ interface RefereePortalProps {
   onMatchFinalized: () => void;
 }
 
-export function RefereePortal({ matchId, onBackToFixtures, onMatchFinalized }: RefereePortalProps) {
+export function RefereePortal({
+  matchId,
+  onBackToFixtures,
+  onMatchFinalized,
+}: RefereePortalProps) {
   const [match, setMatch] = useState<Match | null>(null);
   const [events, setEvents] = useState<MatchEvent[]>([]);
   const [seconds, setSeconds] = useState(0);
@@ -25,22 +42,27 @@ export function RefereePortal({ matchId, onBackToFixtures, onMatchFinalized }: R
   const matchRef = useRef<Match | null>(null);
 
   const [showEventDialog, setShowEventDialog] = useState(false);
-  const [dialogTeamId, setDialogTeamId] = useState('');
-  const [dialogType, setDialogType] = useState<MatchEvent['type']>('goal');
-  const [dialogPlayerId, setDialogPlayerId] = useState('');
-  const [dialogPlayerInId, setDialogPlayerInId] = useState('');
-  const [formError, setFormError] = useState('');
+  const [dialogTeamId, setDialogTeamId] = useState("");
+  const [dialogType, setDialogType] = useState<MatchEvent["type"]>("goal");
+  const [dialogPlayerId, setDialogPlayerId] = useState("");
+  const [dialogPlayerInId, setDialogPlayerInId] = useState("");
+  const [formError, setFormError] = useState("");
 
   useEffect(() => {
     matchRef.current = match;
   }, [match]);
 
   useEffect(() => {
-    const timerWorker = new Worker(new URL('../workers/matchTimer.worker.ts', import.meta.url), { type: 'module' });
+    const timerWorker = new Worker(
+      new URL("../workers/matchTimer.worker.ts", import.meta.url),
+      { type: "module" },
+    );
     timerWorkerRef.current = timerWorker;
 
-    timerWorker.onmessage = (event: MessageEvent<{ type: 'tick'; seconds: number; running: boolean }>) => {
-      if (event.data.type !== 'tick') return;
+    timerWorker.onmessage = (
+      event: MessageEvent<{ type: "tick"; seconds: number; running: boolean }>,
+    ) => {
+      if (event.data.type !== "tick") return;
 
       const nextSeconds = event.data.seconds;
       const nextMinute = Math.floor(nextSeconds / 60);
@@ -48,7 +70,12 @@ export function RefereePortal({ matchId, onBackToFixtures, onMatchFinalized }: R
       setIsPlaying(event.data.running);
 
       const activeMatch = matchRef.current;
-      if (!activeMatch || activeMatch.status !== 'live' || activeMatch.liveMinute === nextMinute) return;
+      if (
+        !activeMatch ||
+        activeMatch.status !== "live" ||
+        activeMatch.liveMinute === nextMinute
+      )
+        return;
 
       const updatedMatch = { ...activeMatch, liveMinute: nextMinute };
       updateMatch(updatedMatch);
@@ -57,7 +84,7 @@ export function RefereePortal({ matchId, onBackToFixtures, onMatchFinalized }: R
     };
 
     return () => {
-      timerWorker.postMessage({ type: 'stop' });
+      timerWorker.postMessage({ type: "stop" });
       timerWorker.terminate();
       timerWorkerRef.current = null;
     };
@@ -75,11 +102,11 @@ export function RefereePortal({ matchId, onBackToFixtures, onMatchFinalized }: R
 
       const savedSeconds = (activeMatch.liveMinute ?? 0) * 60;
       setSeconds(savedSeconds);
-      setIsPlaying(activeMatch.status === 'live');
+      setIsPlaying(activeMatch.status === "live");
       timerWorkerRef.current?.postMessage(
-        activeMatch.status === 'live'
-          ? { type: 'start', seconds: savedSeconds }
-          : { type: 'set', seconds: savedSeconds }
+        activeMatch.status === "live"
+          ? { type: "start", seconds: savedSeconds }
+          : { type: "set", seconds: savedSeconds },
       );
 
       setEvents(await getMatchEvents(matchId));
@@ -91,10 +118,16 @@ export function RefereePortal({ matchId, onBackToFixtures, onMatchFinalized }: R
       setOffline(getOfflineSimState());
     };
 
-    window.addEventListener('torneoapp_connection_change', handleConnectionUpdate);
+    window.addEventListener(
+      "torneoapp_connection_change",
+      handleConnectionUpdate,
+    );
     return () => {
       cancelled = true;
-      window.removeEventListener('torneoapp_connection_change', handleConnectionUpdate);
+      window.removeEventListener(
+        "torneoapp_connection_change",
+        handleConnectionUpdate,
+      );
     };
   }, [matchId]);
 
@@ -108,15 +141,21 @@ export function RefereePortal({ matchId, onBackToFixtures, onMatchFinalized }: R
 
   const teamAPlayers = getPlayersByTeam(match.teamAId);
   const teamBPlayers = getPlayersByTeam(match.teamBId);
-  const dialogTeamName = dialogTeamId === match.teamAId ? match.teamAName : match.teamBName;
-  const dialogPlayers = dialogTeamId === match.teamAId ? teamAPlayers : teamBPlayers;
-  const selectedPlayer = dialogPlayers.find((player) => player.id === dialogPlayerId);
-  const selectedPlayerIn = dialogPlayers.find((player) => player.id === dialogPlayerInId);
+  const dialogTeamName =
+    dialogTeamId === match.teamAId ? match.teamAName : match.teamBName;
+  const dialogPlayers =
+    dialogTeamId === match.teamAId ? teamAPlayers : teamBPlayers;
+  const selectedPlayer = dialogPlayers.find(
+    (player) => player.id === dialogPlayerId,
+  );
+  const selectedPlayerIn = dialogPlayers.find(
+    (player) => player.id === dialogPlayerInId,
+  );
 
   const formatTimer = () => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
   const getRunningMinute = () => Math.floor(seconds / 60);
@@ -124,7 +163,7 @@ export function RefereePortal({ matchId, onBackToFixtures, onMatchFinalized }: R
   const handleStartTimer = () => {
     const updatedMatch: Match = {
       ...match,
-      status: 'live',
+      status: "live",
       liveMinute: Math.floor(seconds / 60),
       additionalTimeMinutes: match.additionalTimeMinutes ?? 0,
     };
@@ -132,11 +171,11 @@ export function RefereePortal({ matchId, onBackToFixtures, onMatchFinalized }: R
     updateMatch(updatedMatch);
     matchRef.current = updatedMatch;
     setMatch(updatedMatch);
-    timerWorkerRef.current?.postMessage({ type: 'start', seconds });
+    timerWorkerRef.current?.postMessage({ type: "start", seconds });
   };
 
   const handlePauseTimer = () => {
-    timerWorkerRef.current?.postMessage({ type: 'pause' });
+    timerWorkerRef.current?.postMessage({ type: "pause" });
   };
 
   const handleAddAdditionalTime = () => {
@@ -148,37 +187,37 @@ export function RefereePortal({ matchId, onBackToFixtures, onMatchFinalized }: R
     updateMatch(updatedMatch);
     matchRef.current = updatedMatch;
     setMatch(updatedMatch);
-    timerWorkerRef.current?.postMessage({ type: 'add', seconds: 60 });
+    timerWorkerRef.current?.postMessage({ type: "add", seconds: 60 });
   };
 
-  const openActionDialog = (teamId: string, type: MatchEvent['type']) => {
+  const openActionDialog = (teamId: string, type: MatchEvent["type"]) => {
     const players = getPlayersByTeam(teamId);
 
     setDialogTeamId(teamId);
     setDialogType(type);
-    setDialogPlayerId(players[0]?.id || '');
-    setDialogPlayerInId(type === 'substitution' ? players[1]?.id || '' : '');
-    setFormError('');
+    setDialogPlayerId(players[0]?.id || "");
+    setDialogPlayerInId(type === "substitution" ? players[1]?.id || "" : "");
+    setFormError("");
     setShowEventDialog(true);
   };
 
   const handleRegisterEventSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setFormError('');
+    setFormError("");
 
     if (!selectedPlayer) {
-      setFormError('Selecciona un jugador registrado para guardar el evento.');
+      setFormError("Selecciona un jugador registrado para guardar el evento.");
       return;
     }
 
-    if (dialogType === 'substitution') {
+    if (dialogType === "substitution") {
       if (!selectedPlayerIn) {
-        setFormError('Selecciona el jugador que entra.');
+        setFormError("Selecciona el jugador que entra.");
         return;
       }
 
       if (selectedPlayer.id === selectedPlayerIn.id) {
-        setFormError('El jugador que sale y el que entra deben ser distintos.');
+        setFormError("El jugador que sale y el que entra deben ser distintos.");
         return;
       }
     }
@@ -208,25 +247,25 @@ export function RefereePortal({ matchId, onBackToFixtures, onMatchFinalized }: R
   };
 
   const handleConcludeGame = () => {
-    timerWorkerRef.current?.postMessage({ type: 'pause' });
+    timerWorkerRef.current?.postMessage({ type: "pause" });
     finalizeMatch(match.id);
     const refreshedMatch = getMatches().find((m) => m.id === match.id);
     if (refreshedMatch) setMatch(refreshedMatch);
     onMatchFinalized();
   };
 
-  const eventTitle = (type: MatchEvent['type']) => {
-    if (type === 'goal') return 'Gol';
-    if (type === 'yellow_card') return 'Tarjeta amarilla';
-    if (type === 'red_card') return 'Tarjeta roja';
-    return 'Sustitucion';
+  const eventTitle = (type: MatchEvent["type"]) => {
+    if (type === "goal") return "Gol";
+    if (type === "yellow_card") return "Tarjeta amarilla";
+    if (type === "red_card") return "Tarjeta roja";
+    return "Sustitucion";
   };
 
-  const eventClassName = (type: MatchEvent['type']) => {
-    if (type === 'goal') return 'bg-emerald-50 text-emerald-700';
-    if (type === 'yellow_card') return 'bg-yellow-50 text-yellow-700';
-    if (type === 'red_card') return 'bg-red-50 text-red-700';
-    return 'bg-blue-50 text-blue-700';
+  const eventClassName = (type: MatchEvent["type"]) => {
+    if (type === "goal") return "bg-emerald-50 text-emerald-700";
+    if (type === "yellow_card") return "bg-yellow-50 text-yellow-700";
+    if (type === "red_card") return "bg-red-50 text-red-700";
+    return "bg-blue-50 text-blue-700";
   };
 
   const playerLabel = (player: Player) => `#${player.number} ${player.name}`;
@@ -253,14 +292,18 @@ export function RefereePortal({ matchId, onBackToFixtures, onMatchFinalized }: R
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/10 uppercase font-display text-lg font-black tracking-wider shadow-inner text-yellow-400">
               {match.teamAName.substring(0, 2)}
             </div>
-            <h4 className="mt-2 text-sm font-black md:text-base">{match.teamAName}</h4>
-            <span className="text-[10px] text-gray-400 font-bold uppercase">Local</span>
+            <h4 className="mt-2 text-sm font-black md:text-base">
+              {match.teamAName}
+            </h4>
+            <span className="text-[10px] text-gray-400 font-bold uppercase">
+              Local
+            </span>
           </div>
 
           <div className="flex flex-col items-center shrink-0">
             <span className="text-xs font-bold text-red-500 flex items-center gap-1 animate-pulse uppercase">
               <span className="h-1.5 w-1.5 rounded-full bg-red-600 animate-pulse" />
-              {match.status === 'live' ? 'En Vivo' : 'Concluido'}
+              {match.status === "live" ? "En Vivo" : "Concluido"}
             </span>
             <div className="mt-2 font-display text-4xl font-extrabold tracking-wider flex items-center gap-4">
               <span>{match.scoreA}</span>
@@ -268,14 +311,20 @@ export function RefereePortal({ matchId, onBackToFixtures, onMatchFinalized }: R
               <span>{match.scoreB}</span>
             </div>
 
-            {match.status !== 'finished' && (
+            {match.status !== "finished" && (
               <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
                 <button
                   onClick={isPlaying ? handlePauseTimer : handleStartTimer}
                   className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-2 text-xs font-bold text-white transition-all hover:bg-white/20"
                 >
                   {isPlaying ? <Pause size={14} /> : <Play size={14} />}
-                  <span>{isPlaying ? 'Pausa' : match.status === 'live' ? 'Reanudar' : 'Inicio'}</span>
+                  <span>
+                    {isPlaying
+                      ? "Pausa"
+                      : match.status === "live"
+                        ? "Reanudar"
+                        : "Inicio"}
+                  </span>
                 </button>
                 <div className="rounded-full bg-[#fcd400] text-[#6e5c00] px-3.5 py-1 text-xs font-black tracking-wider flex items-center gap-1 shadow-sm border border-yellow-300">
                   <span>{formatTimer()}</span>
@@ -301,8 +350,12 @@ export function RefereePortal({ matchId, onBackToFixtures, onMatchFinalized }: R
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/10 uppercase font-display text-lg font-black tracking-wider shadow-inner text-emerald-400">
               {match.teamBName.substring(0, 2)}
             </div>
-            <h4 className="mt-2 text-sm font-black md:text-base">{match.teamBName}</h4>
-            <span className="text-[10px] text-gray-400 font-bold uppercase">Visitante</span>
+            <h4 className="mt-2 text-sm font-black md:text-base">
+              {match.teamBName}
+            </h4>
+            <span className="text-[10px] text-gray-400 font-bold uppercase">
+              Visitante
+            </span>
           </div>
         </div>
       </section>
@@ -315,28 +368,41 @@ export function RefereePortal({ matchId, onBackToFixtures, onMatchFinalized }: R
           <div>
             <p className="font-bold">Offline activado en la cancha</p>
             <p className="mt-0.5 leading-normal text-gray-700">
-              Las incidencias se guardan localmente y se sincronizan cuando vuelva la conexion.
+              Las incidencias se guardan localmente y se sincronizan cuando
+              vuelva la conexion.
             </p>
           </div>
         </div>
       )}
 
-      {match.status === 'live' && (
+      {match.status === "live" && (
         <section className="p-3 bg-gray-50 rounded-2xl border border-gray-100 space-y-4">
           <div className="text-center">
-            <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">Panel de eventos del partido</span>
+            <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">
+              Panel de eventos del partido
+            </span>
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {[
-              { id: match.teamAId, name: match.teamAName, goalClass: 'bg-emerald-600 hover:bg-emerald-700' },
-              { id: match.teamBId, name: match.teamBName, goalClass: 'bg-[#0b1f18] hover:bg-black' },
+              {
+                id: match.teamAId,
+                name: match.teamAName,
+                goalClass: "bg-emerald-600 hover:bg-emerald-700",
+              },
+              {
+                id: match.teamBId,
+                name: match.teamBName,
+                goalClass: "bg-[#0b1f18] hover:bg-black",
+              },
             ].map((team) => (
               <div key={team.id} className="space-y-2.5">
-                <p className="text-xs font-bold text-center text-gray-600 truncate">{team.name}</p>
+                <p className="text-xs font-bold text-center text-gray-600 truncate">
+                  {team.name}
+                </p>
 
                 <button
-                  onClick={() => openActionDialog(team.id, 'goal')}
+                  onClick={() => openActionDialog(team.id, "goal")}
                   className={`w-full h-16 rounded-xl text-white flex flex-col items-center justify-center gap-1 active:scale-95 transition-all shadow-sm font-display text-sm font-black tracking-wide ${team.goalClass}`}
                 >
                   <span>GOL</span>
@@ -344,19 +410,19 @@ export function RefereePortal({ matchId, onBackToFixtures, onMatchFinalized }: R
 
                 <div className="grid grid-cols-3 gap-2">
                   <button
-                    onClick={() => openActionDialog(team.id, 'yellow_card')}
+                    onClick={() => openActionDialog(team.id, "yellow_card")}
                     className="h-14 rounded-xl bg-yellow-400 text-yellow-950 flex items-center justify-center active:scale-95 transition-all border border-yellow-500 font-bold text-[10px]"
                   >
                     Amarilla
                   </button>
                   <button
-                    onClick={() => openActionDialog(team.id, 'red_card')}
+                    onClick={() => openActionDialog(team.id, "red_card")}
                     className="h-14 rounded-xl bg-red-600 text-white flex items-center justify-center active:scale-95 transition-all border border-red-700 font-bold text-[10px]"
                   >
                     Roja
                   </button>
                   <button
-                    onClick={() => openActionDialog(team.id, 'substitution')}
+                    onClick={() => openActionDialog(team.id, "substitution")}
                     className="h-14 rounded-xl bg-blue-600 text-white flex items-center justify-center active:scale-95 transition-all border border-blue-700 font-bold text-[10px]"
                   >
                     Cambio
@@ -370,14 +436,20 @@ export function RefereePortal({ matchId, onBackToFixtures, onMatchFinalized }: R
 
       <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="font-display text-base font-bold text-gray-900">Historial del encuentro</h3>
-          <span className="text-[10px] font-bold text-gray-400 tracking-wider">CRONOLOGIA DIRECTA</span>
+          <h3 className="font-display text-base font-bold text-gray-900">
+            Historial del encuentro
+          </h3>
+          <span className="text-[10px] font-bold text-gray-400 tracking-wider">
+            CRONOLOGIA DIRECTA
+          </span>
         </div>
 
         <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
           {events.length === 0 ? (
             <div className="text-center py-8 bg-white border border-gray-100 rounded-xl">
-              <p className="text-xs font-medium text-gray-400">El arbitro aun no ha registrado sucesos.</p>
+              <p className="text-xs font-medium text-gray-400">
+                El arbitro aun no ha registrado sucesos.
+              </p>
             </div>
           ) : (
             events.map((ev) => (
@@ -385,17 +457,23 @@ export function RefereePortal({ matchId, onBackToFixtures, onMatchFinalized }: R
                 key={ev.id}
                 className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-100 shadow-2xs animate-in slide-in-from-left duration-200"
               >
-                <span className="font-display text-sm font-black text-gray-400 shrink-0 w-8">{ev.minute}'</span>
+                <span className="font-display text-sm font-black text-gray-400 shrink-0 w-8">
+                  {ev.minute}'
+                </span>
 
-                <div className={`px-2 py-1 rounded-full shrink-0 text-[10px] font-black uppercase ${eventClassName(ev.type)}`}>
+                <div
+                  className={`px-2 py-1 rounded-full shrink-0 text-[10px] font-black uppercase ${eventClassName(ev.type)}`}
+                >
                   {eventTitle(ev.type)}
                 </div>
 
                 <div className="flex-1">
                   <p className="text-xs font-bold text-gray-900">
-                    <span className="text-[10px] bg-gray-100 text-gray-600 rounded px-1">{ev.teamName}</span>
+                    <span className="text-[10px] bg-gray-100 text-gray-600 rounded px-1">
+                      {ev.teamName}
+                    </span>
                   </p>
-                  {ev.type === 'substitution' ? (
+                  {ev.type === "substitution" ? (
                     <p className="text-[10px] text-gray-400 font-medium">
                       Sale: {ev.playerName} / Entra: {ev.playerInName}
                     </p>
@@ -410,13 +488,27 @@ export function RefereePortal({ matchId, onBackToFixtures, onMatchFinalized }: R
           )}
         </div>
       </section>
-
-      {match.status === 'live' && (
+      
+      {(match.status === "live" || match.status === "finished") && (
+        <div className="pt-2">
+          <button
+            onClick={async () => {
+              const { downloadMatchPDF } = await import("../utils/pdfExport");
+              await downloadMatchPDF(match, events);
+            }}
+            className="w-full h-11 flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white text-xs font-semibold text-gray-700 hover:bg-gray-50 active:scale-95 transition-all shadow-sm"
+          >
+            <FileDown size={16} />
+            Descargar acta PDF
+          </button>
+        </div>
+      )}
+      {match.status === "live" && (
         <div className="pt-4">
           <button
             onClick={handleConcludeGame}
             className="w-full h-13 text-white rounded-xl font-display font-bold text-sm tracking-wide shadow-md hover:shadow-lg active:scale-95 transition-all text-center flex items-center justify-center gap-2"
-            style={{ backgroundColor: '#ba1a1a' }}
+            style={{ backgroundColor: "#ba1a1a" }}
           >
             <CheckCircle2 size={18} />
             <span>Finalizar encuentro oficial</span>
@@ -443,7 +535,9 @@ export function RefereePortal({ matchId, onBackToFixtures, onMatchFinalized }: R
                 <>
                   <div className="space-y-1">
                     <label className="block text-[10px] font-bold text-gray-400 uppercase">
-                      {dialogType === 'substitution' ? 'Jugador que sale' : 'Jugador responsable'}
+                      {dialogType === "substitution"
+                        ? "Jugador que sale"
+                        : "Jugador responsable"}
                     </label>
                     <select
                       required
@@ -459,9 +553,11 @@ export function RefereePortal({ matchId, onBackToFixtures, onMatchFinalized }: R
                     </select>
                   </div>
 
-                  {dialogType === 'substitution' && (
+                  {dialogType === "substitution" && (
                     <div className="space-y-1">
-                      <label className="block text-[10px] font-bold text-gray-400 uppercase">Jugador que entra</label>
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase">
+                        Jugador que entra
+                      </label>
                       <select
                         required
                         value={dialogPlayerInId}
@@ -479,7 +575,11 @@ export function RefereePortal({ matchId, onBackToFixtures, onMatchFinalized }: R
                 </>
               )}
 
-              {formError && <p className="text-xs font-semibold text-red-600">{formError}</p>}
+              {formError && (
+                <p className="text-xs font-semibold text-red-600">
+                  {formError}
+                </p>
+              )}
 
               <div className="flex gap-2 pt-2">
                 <button
