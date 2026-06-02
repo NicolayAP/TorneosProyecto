@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Home, Trophy, CalendarDays, Layers, User, ShieldAlert } from 'lucide-react';
+import { Home, Trophy, CalendarDays, Layers, ShieldAlert, BarChart3 } from 'lucide-react';
 
 interface NavigationProps {
   currentTab: string;
@@ -18,6 +18,8 @@ export function Navigation({ currentTab, setCurrentTab, currentProfile }: Naviga
     { id: 'leagues', label: 'Torneos', icon: Trophy },
     { id: 'fixtures', label: 'Partidos', icon: CalendarDays },
     { id: 'teams', label: 'Equipos', icon: Layers },
+    { id: 'statistics', label: 'Estadisticas', icon: BarChart3 },
+    { id: 'referees', label: 'Árbitros', icon: ShieldAlert },
   ];
 
   return (

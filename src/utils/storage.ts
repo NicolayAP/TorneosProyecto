@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Tournament, Team, Player, Match, MatchEvent, OfflineChange } from '../types';
+import { Tournament, Team, Player, Match, MatchEvent, OfflineChange, Referee } from '../types';
 
 // Pre-populated realistic initial datasets matching mockups
 const INITIAL_TOURNAMENTS: Tournament[] = [];
@@ -15,6 +15,8 @@ const INITIAL_PLAYERS: Player[] = [];
 const INITIAL_MATCHES: Match[] = [];
 
 const INITIAL_EVENTS: MatchEvent[] = [];
+
+const INITIAL_REFEREES: Referee[] = [];
 
 export function getOfflineSimState(): boolean {
   return localStorage.getItem('torneoapp_offline_sim') === 'true';
@@ -33,6 +35,7 @@ export function initializeDatabase() {
     localStorage.setItem('torneoapp_players', JSON.stringify(INITIAL_PLAYERS));
     localStorage.setItem('torneoapp_matches', JSON.stringify(INITIAL_MATCHES));
     localStorage.setItem('torneoapp_events', JSON.stringify(INITIAL_EVENTS));
+    localStorage.setItem('torneoapp_referees', JSON.stringify(INITIAL_REFEREES));
     localStorage.setItem('torneoapp_changes', JSON.stringify([]));
     localStorage.setItem('torneoapp_offline_sim', 'false');
     localStorage.setItem('torneoapp_initialized', 'true');
@@ -49,6 +52,7 @@ export function resetDatabase() {
   localStorage.setItem('torneoapp_players', JSON.stringify(INITIAL_PLAYERS));
   localStorage.setItem('torneoapp_matches', JSON.stringify(INITIAL_MATCHES));
   localStorage.setItem('torneoapp_events', JSON.stringify(INITIAL_EVENTS));
+  localStorage.setItem('torneoapp_referees', JSON.stringify(INITIAL_REFEREES));
   localStorage.setItem('torneoapp_changes', JSON.stringify([]));
   dispatchEvent(new Event('torneoapp_data_updated'));
 }
@@ -193,6 +197,32 @@ export function deletePlayer(playerId: string): void {
       payload: playerToDelete
     });
   }
+}
+
+// Referees
+export function getReferees(): Referee[] {
+  return get<Referee>('torneoapp_referees');
+}
+
+export function addReferee(referee: Referee): void {
+  const referees = getReferees();
+  referees.push(referee);
+  save('torneoapp_referees', referees);
+}
+
+export function updateReferee(referee: Referee): void {
+  const referees = getReferees();
+  const idx = referees.findIndex(r => r.id === referee.id);
+  if (idx !== -1) {
+    referees[idx] = referee;
+    save('torneoapp_referees', referees);
+  }
+}
+
+export function deleteReferee(refereeId: string): void {
+  const referees = getReferees();
+  const filtered = referees.filter(r => r.id !== refereeId);
+  save('torneoapp_referees', filtered);
 }
 
 // Matches

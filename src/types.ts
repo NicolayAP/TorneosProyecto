@@ -57,16 +57,31 @@ export interface Match {
   date: string; // YYYY-MM-DD
   refereeName?: string;
   liveMinute?: number;
+  additionalTimeMinutes?: number;
 }
 
 export interface MatchEvent {
   id: string;
   matchId: string;
+  teamId: string;
   teamName: string;
-  type: 'goal' | 'yellow_card' | 'red_card';
+  type: 'goal' | 'yellow_card' | 'red_card' | 'substitution';
   minute: number;
+  playerId: string;
   playerName: string;
   playerNumber?: number;
+  playerInId?: string;
+  playerInName?: string;
+  playerInNumber?: number;
+}
+
+export interface Referee {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  specializations: string[];
+  status: 'active' | 'inactive';
 }
 
 export interface OfflineChange {

@@ -13,18 +13,18 @@ import { TeamsView } from './components/TeamsView';
 import { RefereePortal } from './components/RefereePortal';
 import { CreateTournamentForm } from './components/CreateTournamentForm';
 import { TeamDetailView } from './components/TeamDetailView';
+import { RefereesView } from './components/RefereesView';
+import { StatisticsView } from './components/StatisticsView';
 
 import { 
   getOfflineSimState, 
   getOfflineChanges, 
   initializeDatabase,
-  getTournaments,
-  getTeams,
-  getMatches
+  getTournaments
 } from './utils/storage';
 import { TournamentDetailView } from './components/TournamentDetailView';
 
-import { Shield, Sparkles, RefreshCw, WifiOff, Trash2, Check, CloudLightning } from 'lucide-react';
+import { Sparkles, WifiOff } from 'lucide-react';
 
 export default function App() {
   // Initialize standard datasets locally inside browser storage
@@ -172,6 +172,14 @@ export default function App() {
                           triggerToast("Roster y datos del club guardados con éxito", "success");
                         }}
                       />
+                    )}
+
+                    {currentTab === 'referees' && (
+                      <RefereesView />
+                    )}
+
+                    {currentTab === 'statistics' && (
+                      <StatisticsView />
                     )}
 
                     {currentTab === 'leagues' && (
