@@ -1,3 +1,4 @@
+import { solicitarPermisoNotificaciones } from '../firebase'
 import { createContext, useContext, useEffect, useState } from 'react'
 import { db } from '../db/db'
 
@@ -44,6 +45,7 @@ export function AuthProvider({ children }) {
     const sesion = { id: user.id, username: user.username, rol: user.rol }
     setUsuario(sesion)
     sessionStorage.setItem('usuario', JSON.stringify(sesion))
+    solicitarPermisoNotificaciones()
     return true
   }
 
