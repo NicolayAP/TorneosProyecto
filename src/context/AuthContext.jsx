@@ -1,66 +1,83 @@
-import { solicitarPermisoNotificaciones } from '../firebase'
-import { createContext, useContext, useEffect, useState } from 'react'
-import { db } from '../db/db'
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
 
-const AuthContext = createContext(null)
+// ─── Constantes ────────────────────────────────────────────────────────────────
+const AUTH_KEY = "torneo_auth_session";
 
-async function hashPIN(pin) {
-  const encoder = new TextEncoder()
-  const data = encoder.encode(pin)
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-  const hashArray = Array.from(new Uint8Array(hashBuffer))
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+export const ROLES = {
+  ADMIN: "admin",
+  ARBITRO: "arbitro",
+};
+
+// PINs por defecto hasheados con SHA-256
+// SHA-256("1234") → admin
+// SHA-256("123")  → arbitro
+const DEFAULT_PINS = {
+  [ROLES.ADMIN]:   "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
+  [ROLES.ARBITRO]: "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3",
+};
+
+// ─── Utilidad SHA-256 (nativa, sin librerías) ───────────────────────────────────
+async function sha256(text) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(text);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-async function seedUsuarios() {
-  const count = await db.usuarios.count()
-  if (count === 0) {
-    const adminHash = await hashPIN('1234')
-    const arbitroHash = await hashPIN('0000')
-    await db.usuarios.bulkAdd([
-      { username: 'admin', pinHash: adminHash, rol: 'admin' },
-      { username: 'arbitro', pinHash: arbitroHash, rol: 'arbitro' },
-    ])
-  }
-}
+// ─── Context ────────────────────────────────────────────────────────────────────
+const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [usuario, setUsuario] = useState(null)
-  const [cargando, setCargando] = useState(true)
+  const [usuario, setUsuario] = useState(null); // { rol, nombre }
+  const [cargando, setCargando] = useState(true);
 
+  // Restaurar sesión al recargar
   useEffect(() => {
-    seedUsuarios()
-    const guardado = sessionStorage.getItem('usuario')
-    if (guardado) setUsuario(JSON.parse(guardado))
-    setCargando(false)
-  }, [])
+    try {
+      const stored = sessionStorage.getItem(AUTH_KEY);
+      if (stored) setUsuario(JSON.parse(stored));
+    } catch (_) {}
+    setCargando(false);
+  }, []);
 
-  async function login(username, pin) {
-    const pinHash = await hashPIN(pin)
-    const user = await db.usuarios
-      .where('username').equals(username)
-      .and(u => u.pinHash === pinHash)
-      .first()
-    if (!user) return false
-    const sesion = { id: user.id, username: user.username, rol: user.rol }
-    setUsuario(sesion)
-    sessionStorage.setItem('usuario', JSON.stringify(sesion))
-    solicitarPermisoNotificaciones()
-    return true
-  }
+  // Login: valida PIN con SHA-256
+  const login = useCallback(async (rol, pin) => {
+    const hash = await sha256(pin);
+    const expected = DEFAULT_PINS[rol];
 
-  function logout() {
-    setUsuario(null)
-    sessionStorage.removeItem('usuario')
-  }
+    if (!expected || hash !== expected) {
+      return { ok: false, error: "PIN incorrecto" };
+    }
+
+    const nuevoUsuario = {
+      rol,
+      nombre: rol === ROLES.ADMIN ? "Administrador" : "Árbitro / Anotador",
+      loggedAt: Date.now(),
+    };
+    sessionStorage.setItem(AUTH_KEY, JSON.stringify(nuevoUsuario));
+    setUsuario(nuevoUsuario);
+    return { ok: true };
+  }, []);
+
+  // Logout
+  const logout = useCallback(() => {
+    sessionStorage.removeItem(AUTH_KEY);
+    setUsuario(null);
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ usuario, login, logout, cargando }}>
+    <AuthContext.Provider value={{ usuario, cargando, login, logout, ROLES }}>
       {children}
     </AuthContext.Provider>
-  )
+  );
 }
 
+// ─── Hook principal ─────────────────────────────────────────────────────────────
 export function useAuth() {
-  return useContext(AuthContext)
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth debe usarse dentro de <AuthProvider>");
+  return ctx;
 }
+
+export default AuthContext;

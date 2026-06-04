@@ -1,80 +1,113 @@
-import { useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth, ROLES } from "../context/AuthContext";
+import "./Login.css";
 
 export default function Login() {
-  const { login } = useAuth()
-  const navigate = useNavigate()
-  const location = useLocation()
-  const [username, setUsername] = useState('')
-  const [pin, setPin] = useState('')
-  const [error, setError] = useState('')
-  const [cargando, setCargando] = useState(false)
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
-  const destino = location.state?.from || '/'
+  const [role, setRole] = useState(ROLES.ADMIN);
+  const [pin, setPin] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  async function handleLogin() {
-    if (!username || pin.length < 4) {
-      setError('Ingresa usuario y PIN de 4 dígitos.')
-      return
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (pin.length < 3) {
+      setError("El PIN debe tener al menos 3 dígitos");
+      return;
     }
-    setCargando(true)
-    const ok = await login(username, pin)
-    setCargando(false)
-    if (ok) {
-      navigate(destino, { replace: true })
+    setLoading(true);
+    setError("");
+    const result = await login(role, pin);
+    setLoading(false);
+
+    if (result.ok) {
+      navigate("/");
     } else {
-      setError('Usuario o PIN incorrecto.')
-      setPin('')
+      setError(result.error);
+      setPin("");
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-sm space-y-4">
-        <div className="text-center">
-          <p className="text-5xl mb-2">🏆</p>
-          <h2 className="text-xl font-bold text-gray-800">TorneoApp</h2>
-          <p className="text-sm text-gray-500">Inicia sesión para continuar</p>
+    <div className="login-wrapper">
+
+      {/* Topbar igual al Header de la app */}
+      <div className="login-topbar">
+        <div className="login-brand">
+          <div className="login-brand-icon">T</div>
+          <span className="login-brand-name">TorneoApp</span>
+          <span className="login-brand-badge">PWA</span>
+        </div>
+      </div>
+
+      {/* Card */}
+      <div className="login-card">
+        <div className="login-card-header">
+          <p className="login-card-eyebrow">Control de Acceso</p>
+          <h1 className="login-card-title">Iniciar sesión</h1>
+          <p className="login-card-subtitle">Selecciona tu rol e ingresa tu PIN</p>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Usuario</label>
-          <input
-            value={username}
-            onChange={e => setUsername(e.target.value)}
-            placeholder="admin / arbitro"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-          />
+        <div className="login-card-body">
+          <form onSubmit={handleSubmit}>
+
+            {/* Selector de rol */}
+            <span className="role-label">Tu rol</span>
+            <fieldset className="role-group">
+              <label className={`role-option ${role === ROLES.ADMIN ? "active" : ""}`}>
+                <input
+                  type="radio"
+                  name="role"
+                  value={ROLES.ADMIN}
+                  checked={role === ROLES.ADMIN}
+                  onChange={() => { setRole(ROLES.ADMIN); setError(""); }}
+                />
+                <span className="role-option-icon">🛡️</span>
+                Administrador
+              </label>
+              <label className={`role-option ${role === ROLES.ARBITRO ? "active" : ""}`}>
+                <input
+                  type="radio"
+                  name="role"
+                  value={ROLES.ARBITRO}
+                  checked={role === ROLES.ARBITRO}
+                  onChange={() => { setRole(ROLES.ARBITRO); setError(""); }}
+                />
+                <span className="role-option-icon">🟨</span>
+                Árbitro
+              </label>
+            </fieldset>
+
+            {/* PIN */}
+            <label htmlFor="pin" className="pin-label">PIN de acceso</label>
+            <input
+              id="pin"
+              type="password"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={8}
+              placeholder="••••"
+              value={pin}
+              onChange={(e) => { setPin(e.target.value.replace(/\D/g, "")); setError(""); }}
+              autoComplete="current-password"
+              className="pin-input"
+            />
+
+            {error && <p className="login-error">{error}</p>}
+
+            <button type="submit" className="login-btn" disabled={loading}>
+              {loading ? "Verificando..." : "Ingresar →"}
+            </button>
+
+            <p className="login-hint">
+              Modo offline disponible • Datos guardados localmente
+            </p>
+          </form>
         </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">PIN</label>
-          <input
-            value={pin}
-            onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-            type="password"
-            inputMode="numeric"
-            placeholder="••••"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-          />
-        </div>
-
-        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-
-        <button
-          onClick={handleLogin}
-          disabled={cargando}
-          className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold text-lg shadow disabled:opacity-50"
-        >
-          {cargando ? 'Verificando...' : 'Entrar'}
-        </button>
-
-        <p className="text-xs text-center text-gray-400">
-          Admin: usuario <strong>admin</strong>, PIN <strong>1234</strong><br />
-          Árbitro: usuario <strong>arbitro</strong>, PIN <strong>0000</strong>
-        </p>
       </div>
     </div>
-  )
+  );
 }

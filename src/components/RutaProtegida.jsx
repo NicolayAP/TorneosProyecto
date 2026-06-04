@@ -5,6 +5,8 @@ export default function RutaProtegida({ children, soloAdmin = false }) {
   const { usuario, cargando } = useAuth()
   const location = useLocation()
 
+  console.log("RutaProtegida →", { usuario, cargando }) 
+
   if (cargando) return null
 
   if (!usuario) {

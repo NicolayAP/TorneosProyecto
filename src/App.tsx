@@ -15,45 +15,62 @@ import { CreateTournamentForm } from './components/CreateTournamentForm';
 import { TeamDetailView } from './components/TeamDetailView';
 import { RefereesView } from './components/RefereesView';
 import { StatisticsView } from './components/StatisticsView';
+import { TournamentDetailView } from './components/TournamentDetailView';
+import { Sparkles, WifiOff } from 'lucide-react';
+import { useNotificaciones } from './utils/useNotificaciones'
+
+import { useAuth } from './context/AuthContext';
+import Login from './pages/Login';
 
 import { 
   getOfflineSimState, 
   getOfflineChanges, 
   initializeDatabase,
-  getTournaments
+  getTournaments,
+  getMatches  
 } from './utils/storage';
-import { TournamentDetailView } from './components/TournamentDetailView';
-
-import { Sparkles, WifiOff } from 'lucide-react';
 
 export default function App() {
-  // Initialize standard datasets locally inside browser storage
+  // ─── Auth ────────────────────────────────────────────────────────────────────
+  const { usuario, cargando, logout } = useAuth();
+
+  // Mostrar login si no hay sesión
+  if (cargando) return null;
+  if (!usuario) return <Login />;
+
+  // El perfil viene del rol autenticado, ya no es un estado manual
+  const activeProfile: 'admin' | 'referee' = usuario.rol === 'admin' ? 'admin' : 'referee';
+
+  return <AppContent activeProfile={activeProfile} logout={logout} />;
+}
+
+// ─── Contenido principal (separado para que los hooks no rompan el early return) ──
+function AppContent({ 
+  activeProfile, 
+  logout 
+}: { 
+  activeProfile: 'admin' | 'referee';
+  logout: () => void;
+}) {
   useEffect(() => {
     initializeDatabase();
   }, []);
 
-  // Screen layout router
-  const [currentTab, setCurrentTab] = useState<string>('home'); // 'home' | 'fixtures' | 'teams' | 'leagues'
-  const [activeProfile, setActiveProfile] = useState<'admin' | 'referee'>('admin');
-  
-  // Custom screen overrides
+  const [currentTab, setCurrentTab] = useState<string>('home');
   const [overrideScreen, setOverrideScreen] = useState<'create_tournament' | 'referee_portal' | null>(null);
   const [activeMatchId, setActiveMatchId] = useState<string>('');
-
-  // Interactive Toast states
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'info'>('success');
   const [syncChangesCount, setSyncChangesCount] = useState(getOfflineChanges().length);
+  const partidos = getMatches()
+  useNotificaciones(partidos)
 
-  // Sync listener setup
   useEffect(() => {
     const handleChangesUpdate = () => {
       setSyncChangesCount(getOfflineChanges().length);
     };
-
     window.addEventListener('torneoapp_changes_count_updated', handleChangesUpdate);
     window.addEventListener('torneoapp_data_updated', handleChangesUpdate);
-
     return () => {
       window.removeEventListener('torneoapp_changes_count_updated', handleChangesUpdate);
       window.removeEventListener('torneoapp_data_updated', handleChangesUpdate);
@@ -63,9 +80,7 @@ export default function App() {
   const triggerToast = (msg: string, type: 'success' | 'info' = 'success') => {
     setToastMessage(msg);
     setToastType(type);
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 4000);
+    setTimeout(() => setToastMessage(null), 4000);
   };
 
   const handleSyncClearedSuccess = () => {
@@ -76,38 +91,31 @@ export default function App() {
     <Routes>
       <Route path="/equipo/:id" element={<TeamDetailView />} />
       <Route path="/torneo/:id" element={<TournamentDetailView />} />
-      <Route 
-        path="/" 
+      <Route
+        path="/"
         element={
           <div className="min-h-screen bg-[#fcf9f8] flex flex-col font-sans text-[#1c1b1b]">
-            
-            {/* 1. Header component containing connection simulators */}
-            <Header 
-              currentProfile={activeProfile} 
-              setCurrentProfile={(p) => {
-                setActiveProfile(p);
-                triggerToast(`Perfil cambiado a: ${p === 'admin' ? 'Coordinador Administrativo' : 'Árbitro de Campo'}`, 'info');
-              }}
+
+            {/* Header — ya no cambia perfil manualmente, refleja el rol del usuario */}
+            <Header
+              currentProfile={activeProfile}
+              setCurrentProfile={() => {}} // deshabilitado: el perfil viene del login
               onSyncComplete={handleSyncClearedSuccess}
+              onLogout={logout}
             />
 
-            {/* Main split-pane content coordinator */}
             <div className="flex flex-1 w-full max-w-7xl mx-auto">
-              
-              {/* 2. Responsive Side Navigation sidebar */}
-              <Navigation 
-                currentTab={currentTab} 
+              <Navigation
+                currentTab={currentTab}
                 setCurrentTab={(tab) => {
                   setOverrideScreen(null);
                   setCurrentTab(tab);
-                }} 
+                }}
                 currentProfile={activeProfile}
               />
 
-              {/* 3. Global Content canvas */}
               <main className="flex-1 px-4 py-6 md:px-8 overflow-y-auto pb-28 md:pb-12">
-                
-                {/* Active offline sync indicators overlay banner */}
+
                 <div className="no-print">
                   {syncChangesCount > 0 && (
                     <div className="mb-6 rounded-xl border border-yellow-300 bg-yellow-50 p-3.5 flex items-center justify-between shadow-2xs animate-in slide-in-from-top duration-300">
@@ -125,9 +133,8 @@ export default function App() {
                   )}
                 </div>
 
-                {/* Active Screen Overrides */}
                 {overrideScreen === 'create_tournament' ? (
-                  <CreateTournamentForm 
+                  <CreateTournamentForm
                     onBackToLeagues={() => setOverrideScreen(null)}
                     onSuccess={() => {
                       setOverrideScreen(null);
@@ -136,7 +143,7 @@ export default function App() {
                     }}
                   />
                 ) : overrideScreen === 'referee_portal' ? (
-                  <RefereePortal 
+                  <RefereePortal
                     matchId={activeMatchId}
                     onBackToFixtures={() => setOverrideScreen(null)}
                     onMatchFinalized={() => {
@@ -146,18 +153,16 @@ export default function App() {
                     }}
                   />
                 ) : (
-                  // Core standard tabs router
                   <>
                     {currentTab === 'home' && (
-                      <DashboardView 
+                      <DashboardView
                         onNavigateToTab={(tab) => setCurrentTab(tab)}
                         onOpenCreateTournament={() => setOverrideScreen('create_tournament')}
                         onOpenCreateTeam={() => setCurrentTab('teams')}
                       />
                     )}
-
                     {currentTab === 'fixtures' && (
-                      <FixturesView 
+                      <FixturesView
                         onManageMatch={(id) => {
                           setActiveMatchId(id);
                           setOverrideScreen('referee_portal');
@@ -165,23 +170,15 @@ export default function App() {
                         onOpenCreateTournament={() => setOverrideScreen('create_tournament')}
                       />
                     )}
-
                     {currentTab === 'teams' && (
-                      <TeamsView 
+                      <TeamsView
                         onAddTeamSuccess={() => {
                           triggerToast("Roster y datos del club guardados con éxito", "success");
                         }}
                       />
                     )}
-
-                    {currentTab === 'referees' && (
-                      <RefereesView />
-                    )}
-
-                    {currentTab === 'statistics' && (
-                      <StatisticsView />
-                    )}
-
+                    {currentTab === 'referees' && <RefereesView />}
+                    {currentTab === 'statistics' && <StatisticsView />}
                     {currentTab === 'leagues' && (
                       <div className="space-y-6">
                         <div className="flex justify-between items-center">
@@ -196,27 +193,16 @@ export default function App() {
                             Nuevo Torneo
                           </button>
                         </div>
-
-                        {/* List of active tournaments */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {getTournaments().map((t) => (
                             <div key={t.id} className="bg-white rounded-xl border border-gray-100 p-5 shadow-xs relative overflow-hidden group">
                               <div className="absolute top-0 bottom-0 left-0 w-1.5 bg-[#fcd400]" />
                               <div className="flex justify-between items-start">
-                                <span className="text-[10px] uppercase font-extrabold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
-                                  {t.sport}
-                                </span>
-                                <span className="text-[10px] uppercase font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded">
-                                  {t.format.toUpperCase()}
-                                </span>
+                                <span className="text-[10px] uppercase font-extrabold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">{t.sport}</span>
+                                <span className="text-[10px] uppercase font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded">{t.format.toUpperCase()}</span>
                               </div>
-                              <h3 className="font-display text-base font-bold text-[#0b1f18] mt-3 group-hover:text-[#705d00] transition-colors">
-                                {t.name}
-                              </h3>
-                              <p className="text-xs text-gray-400 mt-1 font-semibold flex items-center gap-1">
-                                Sede: {t.location}
-                              </p>
-                              
+                              <h3 className="font-display text-base font-bold text-[#0b1f18] mt-3 group-hover:text-[#705d00] transition-colors">{t.name}</h3>
+                              <p className="text-xs text-gray-400 mt-1 font-semibold flex items-center gap-1">Sede: {t.location}</p>
                               <div className="mt-5 grid grid-cols-3 gap-2 border-t border-gray-50 pt-4 text-xs">
                                 <div>
                                   <p className="text-[9px] font-bold text-gray-400 uppercase">Equipos</p>
@@ -238,21 +224,16 @@ export default function App() {
                     )}
                   </>
                 )}
-
               </main>
             </div>
 
-            {/* 4. Global Action Success/Info Toast Alert */}
             {toastMessage && (
               <div className="no-print fixed bottom-24 right-4 md:bottom-6 md:right-6 z-50 flex items-center gap-2.5 rounded-xl bg-zinc-900 border border-zinc-800 px-4 py-3.5 text-white shadow-xl animate-in slide-in-from-bottom duration-200">
-                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-zinc-950 font-black text-xs shrink-0">
-                  ✓
-                </div>
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-zinc-950 font-black text-xs shrink-0">✓</div>
                 <span className="text-xs font-semibold leading-normal">{toastMessage}</span>
               </div>
             )}
 
-            {/* Visual background decorations keeping brand style guide clean */}
             <div className="fixed bottom-0 right-0 -z-10 opacity-3 pointer-events-none font-black text-slate-800 hidden lg:block">
               <Sparkles size={500} />
             </div>
